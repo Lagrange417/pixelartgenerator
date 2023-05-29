@@ -231,12 +231,16 @@ def dither_algo(output_array, img_array, color_array, dither_array):
             
             output_array[x, y] = newpixel
             quant_error = oldpixel - newpixel
-            
+
             for i in range(dither_array.shape[0]):
                 for j in range(dither_array.shape[1]):
-                    output_array[x-2+j, y+i] = np.clip(output_array[x-2+j, y+i] + quant_error * dither_array[i, j], 
-                                                       np.array([0, 0, 0]),
-                                                       np.array([255, 255, 255]))
+                    add_error = quant_error * dither_array[i, j]
+                    if add_error.sum() > 765:
+                        add_error = np.array([255, 255, 255]).astype('float64')  
+                    elif add_error.sum() <0:
+                        add_error = np.array([0, 0, 0]).astype('float64')  
+                    
+                    output_array[x-2+j, y+i] = output_array[x-2+j, y+i] + add_error
                     
     return output_array
 
