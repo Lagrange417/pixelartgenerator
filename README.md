@@ -105,4 +105,10 @@ Uses KMeans clustering to find the main colors that make up the image. Returns a
 - `target_colors`: Number of colors that will be part of the output color palette in the format of `{1: (R, G, B), 2: (R, G, B) ...}`
 
 
+### Apendix
+
+**More Dithering Comparisons**
+
+![dithering_comparison2](https://github.com/Lagrange417/pixelartgenerator/assets/134843622/b7927bb5-4c61-4076-b982-e70b04fa3c41)
+
 
