@@ -54,34 +54,51 @@ This module implements Interleaved Gradient Noise (IGN) Dithering with two diffe
 This modules uses a blue noise texture to create its dithering pattern. There are three different blue noise textures in the `pixelartgenerator/resources` folder. The sizes are 16x16, 32x32, and 64x64. I recommend using the largest format (64x64) to avoid generating visible repeating patterns. As a small bonus, I added a 128x128 texture. you can replace that file with any random image file to blend a texture with an image.  
 
 `blue_noise_dither(input_name, output_name, colors, downscale=1, rescale=1, other_array=None, render=False, kernel_size=64)`
-- `kernel_size`: Determines the size of the blue_noise texture. 
+- `kernel_size`: Determines the size of the blue_noise texture. 16x16, 32x32, and 64x64 implemented
 
 
 ### 2.0 Edge Sharpening and Overlay 
 
 **Note:** This feature a bit experimental and finicky. Basically it detects edges using the Sobel, Prewitt, or Sharr operator. It then overlays the edge on the image using the color palette's darkest and lightest number. Results may vary depending on the input image...
 
-
-
+`edge_sharpen(input_name, output_name, colors, downscale=1, rescale=1, other_array=None, render=False, algorithm=0, gamma=1)`
+- algorithm refers to the Sobel, Prewitt, or Sharr operator. `0=Sobel, 1=Prewitt, 2=Sharr`
 
 ### 3.0 Image Sharpening 
 
 This effect uses two different types of sharpening kernels to sharpen the image. 'Gamma' is a paramenter that one can use to brighten/darken the image. Again its a bit experimental and results may vary. 
 
+`image_sharpen(input_name, output_name, colors, downscale=1, rescale=1, other_array=None, render=False, gamma=1, algorithm=0)`
 
+the kernels used are:
+
+$$ 0:
+\left(\begin{array}{cc} 
+0 & -1 & 0 \\
+-1 & 5 & -1 \\
+0 & -1 & 0
+\end{array}\right),  1: 
+\left(\begin{array}{cc} 
+-1 & -1 & -1 \\
+-1 & 9 & -1 \\
+-1 & -1 & -1
+\end{array}\right)
+$$
 
 ### 4.0 Other Tools
 
 **4.1 Color Palette Swap**
 Substitues the colors in an image with the closest color from another palette. 
 
+`color_swap(input_name, output_name, colors, downscale=1, rescale=1, other_array=None, render=False)`
 
 **4.2 Image to Color Palette**
 Uses KMeans clustering to find the main colors that make up the image. Returns a color palette in dict-fomat of `{1: (R, G, B), 2: (R, G, B) ...}`. Also it outputs an image with the color palette below because I thought that would be cute :) 
 
-**NOTE:** Unlike the other modules this is not very optimized. Recommend downscaling the image to ~200x300 using the downscale paramenter to make it faster. the utput vignette will not be affected by the downscale. 
+**NOTE:** Unlike the other modules this is not very optimized. Recommend downscaling the image to ~200x300 using the downscale paramenter to make it faster. The output vignette will not be affected by the downscale. 
 
-
+`img_2_color_scheme(input_name, output_name, transparent=True, target_colors=16, render=False, downscale=4, rescale=1, other_array=None, colors=None)`
+- `target_colors`: Number of colors that will be part of the output color palette in the format of `{1: (R, G, B), 2: (R, G, B) ...}`
 
 
 
