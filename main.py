@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from sklearn.cluster import KMeans
 
+DITHER_BRIGHTNESS = 32
 
 # define global variables 
 BAYER_KERNEL = {2: np.array([[0, 2], 
@@ -182,14 +183,14 @@ for kernel_size in [16, 32, 64, 128]:
 # 1.1 bayer dithering algorithm
 @njit
 def bayer_algo(img_array, kernel_size, output_array, bayer_array, color_array):
-    for y in range(img_array.shape[1]):
-        for x in range(img_array.shape[0]):
-            oldpixel = img_array[x, y]
-            oldpixel += 126 * bayer_array[x % kernel_size, y % kernel_size]
+    for y in range(img_array.shape[0]):
+        for x in range(img_array.shape[1]):
+            oldpixel = img_array[y, x]
+            oldpixel += DITHER_BRIGHTNESS  * bayer_array[x % kernel_size, y % kernel_size]
             x_pixel = np.power(color_array - oldpixel, 2)
             x_pixel = np.sum(x_pixel, axis=1)
             newpixel = color_array[np.argmin(x_pixel)]
-            output_array[x, y] += newpixel   
+            output_array[y, x] += newpixel   
     return output_array
 
 # wrapper for the actual algorithm
@@ -219,28 +220,31 @@ def bayer_dither(input_name, output_name, colors, downscale=1, rescale=1, other_
 # --------------------------------------------------------------------------- #
 # 1.2 Floyd-steinberg dithering algorithm
 @njit
-def dither_algo(output_array, img_array, color_array, dither_array):
+def dither_algo(output_array, color_array, dither_array):
     # Loop through pixels and apply floyd steinberg
-    for y in range(img_array.shape[1]):
-        for x in range(img_array.shape[0]):
-            oldpixel = img_array[x, y]
+
+    
+    for y in range(0, output_array.shape[0]-2):
+        for x in range(2, output_array.shape[1]-2):
+            oldpixel = np.array(list(output_array[y, x]))
             
             x_pixel = np.power(color_array - oldpixel, 2)
             x_pixel = np.sum(x_pixel, axis=1)
             newpixel = color_array[np.argmin(x_pixel)]
             
-            output_array[x, y] = newpixel
+            output_array[y, x] = newpixel
             quant_error = oldpixel - newpixel
-
+            
             for i in range(dither_array.shape[0]):
                 for j in range(dither_array.shape[1]):
-                    add_error = quant_error * dither_array[i, j]
-                    if add_error.sum() > 765:
-                        add_error = np.array([255, 255, 255]).astype('float64')  
-                    elif add_error.sum() <0:
-                        add_error = np.array([0, 0, 0]).astype('float64')  
-                    
-                    output_array[x-2+j, y+i] = output_array[x-2+j, y+i] + add_error
+                    if dither_array[i, j] != 0:
+                        add_error = output_array[y+i, x-2+j] + quant_error * dither_array[i, j]
+                        if add_error.sum() > 765:
+                            output_array[y+i, x-2+j] = np.array([255, 255, 255]).astype('float64')  
+                        elif add_error.sum() <0:
+                            output_array[y+i, x-2+j] = np.array([0, 0, 0]).astype('float64')  
+                        else:
+                            output_array[y+i, x-2+j] += quant_error * dither_array[i, j]
                     
     return output_array
 
@@ -252,12 +256,12 @@ def dithering(input_name, output_name, colors, downscale=1, rescale=1, other_arr
     img_array, color_array, final_dims = load_image_and_colors(input_name, colors, downscale=downscale, rescale=rescale, other_array=other_array)
     
     # output array 
-    output_array = np.zeros((img_array.shape[0]+2, img_array.shape[1]+2, img_array.shape[2])) 
-    output_array[:-2, :-2, :] += img_array
+    output_array = np.zeros((img_array.shape[0]+ 2, img_array.shape[1]+ 4, img_array.shape[2]))
+    output_array[0:-2, 2:-2, :] += img_array
     
     # Implementation of the actual dithering
-    output_array = dither_algo(output_array, img_array, color_array, DITHER_ARRAY[algorithm])
-    output_array = output_array[:-2, :-2, :]
+    output_array = dither_algo(output_array, color_array, DITHER_ARRAY[algorithm])
+    output_array = output_array[0:-2, 2:-2, :]
     
     if render:
         cv2.imshow(DITHER_NAMES[algorithm], np.flip(output_array/256, axis=-1))
@@ -272,15 +276,15 @@ def dithering(input_name, output_name, colors, downscale=1, rescale=1, other_arr
 # 1.3 Interleaved Gradient Noise Dithering
 @njit 
 def ign_algo(img_array, color_array, output_array, ign_preset):
-    for y in range(0, img_array.shape[1]):
-        for x in range(0, img_array.shape[0]):
-            oldpixel = img_array[x, y]
+    for y in range(0, img_array.shape[0]):
+        for x in range(0, img_array.shape[1]):
+            oldpixel = img_array[y, x]
             v = ign_preset[0] * (ign_preset[1] * x + ign_preset[2] * y)
             v = v - np.floor(v)
-            oldpixel += 126 * v
+            oldpixel += DITHER_BRIGHTNESS * v
             x_pixel = np.power(color_array - oldpixel, 2)
             x_pixel = np.sum(x_pixel, axis=1)
-            output_array[x, y] = color_array[np.argmin(x_pixel)]
+            output_array[y, x] = color_array[np.argmin(x_pixel)]
 
     return output_array
 
@@ -310,14 +314,14 @@ def ign_dither(input_name, output_name, colors, downscale=1, rescale=1, other_ar
 # 1.4 Blue Noise Dithering
 @njit 
 def blue_noise_algo(img_array, kernel_size, output_array, blue_noise, color_array):
-    for y in range(img_array.shape[1]):
-        for x in range(img_array.shape[0]):
-            oldpixel = img_array[x, y]
-            oldpixel += 126 * blue_noise[x % kernel_size, y % kernel_size]
+    for y in range(img_array.shape[0]):
+        for x in range(img_array.shape[1]):
+            oldpixel = img_array[y, x]
+            oldpixel += DITHER_BRIGHTNESS  * blue_noise[x % kernel_size, y % kernel_size]
             x_pixel = np.power(color_array - oldpixel, 2)
             x_pixel = np.sum(x_pixel, axis=1)
             newpixel = color_array[np.argmin(x_pixel)]
-            output_array[x, y] += newpixel   
+            output_array[y, x] += newpixel   
     return output_array
 
 def blue_noise_dither(input_name, output_name, colors, downscale=1, rescale=1, other_array=None, render=False, kernel_size=64):
