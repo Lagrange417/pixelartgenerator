@@ -30,6 +30,10 @@ Most modules are set up in the following manner:
 
 ### 1.0 Dithering Algorithms 
 
+
+![dithering_comparison](https://github.com/Lagrange417/pixelartgenerator/assets/134843622/a4b30514-719d-4b18-855b-0ff93303680b)
+
+
 **1.1 Basic Dithering**
 
 This module has the implmentation for nine different dithering matrices. These are `0: Floyd Steinberg, 1: False Floyd Steinberg, 2: Jarvis, Judice, Ninke, 3: Stucki 4: Atkinson, 5: Burkes, 6: sierra, 7: Two-Row Sierra, 8: Sierra Lite`. See reference image for comparison of the results of the different algorithms. 
