@@ -104,7 +104,8 @@ Uses KMeans clustering to find the main colors that make up the image. Returns a
 `img_2_color_scheme(input_name, output_name, transparent=True, target_colors=16, render=False, downscale=4, rescale=1, other_array=None, colors=None)`
 - `target_colors`: Number of colors that will be part of the output color palette in the format of `{1: (R, G, B), 2: (R, G, B) ...}`
 
-![palette_examples](https://github.com/Lagrange417/pixelartgenerator/assets/134843622/953c2570-abb2-41b4-ba42-8da6b2f1dff3)
+![palette_examples](https://github.com/Lagrange417/pixelartgenerator/assets/134843622/4c990767-9eac-4b0a-9ba1-81ae953d82de)
+
 
 ### Apendix
 
